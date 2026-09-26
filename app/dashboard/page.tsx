@@ -39,6 +39,7 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const business = useBusiness();
+  const canManageSales = business.role !== "STAFF";
   const { data, loading } = useFetch<DashboardData>("/api/dashboard");
   const currency = business.currency;
 
@@ -48,9 +49,9 @@ export default function DashboardPage() {
         title={`Welcome back to ${business.name}`}
         description="Here's how your business is doing today."
         actions={
-          <Button asChild>
+          canManageSales ? <Button asChild>
             <Link href="/dashboard/sales/new">New Sale</Link>
-          </Button>
+          </Button> : undefined
         }
       />
 

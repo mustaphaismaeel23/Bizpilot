@@ -9,7 +9,7 @@ import { generateSku } from "@/lib/utils";
 export async function GET(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:view");
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim();
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:manage");
     const body = await req.json();
     const data = productSchema.parse(body);
 
@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
           description: data.description,
           buyingPrice: data.buyingPrice,
           sellingPrice: data.sellingPrice,
+          wholesalePrice: data.wholesalePrice ?? null,
           quantity: data.quantity,
           lowStockThreshold: data.lowStockThreshold,
           image: data.image,

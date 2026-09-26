@@ -25,6 +25,7 @@ interface Sale {
   invoiceNumber: string;
   total: string;
   balance: string;
+  saleType: string;
   paymentMethod: string;
   paymentStatus: string;
   status: string;
@@ -42,6 +43,7 @@ interface CustomerDetail {
 export default function CustomerProfilePage() {
   const params = useParams<{ id: string }>();
   const business = useBusiness();
+  const canManageSales = business.role !== "STAFF";
   const { toast } = useToast();
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [payingSale, setPayingSale] = useState<Sale | null>(null);
@@ -126,6 +128,7 @@ export default function CustomerProfilePage() {
                 <TableRow>
                   <TableHead>Invoice</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Balance</TableHead>
                   <TableHead>Status</TableHead>
@@ -141,13 +144,14 @@ export default function CustomerProfilePage() {
                       </Link>
                     </TableCell>
                     <TableCell>{format(new Date(s.createdAt), "dd MMM yyyy")}</TableCell>
+                    <TableCell>{s.saleType === "WHOLESALE" ? "Wholesale" : "Retail"}</TableCell>
                     <TableCell>{formatMoney(s.total, business.currency)}</TableCell>
                     <TableCell>{formatMoney(s.balance, business.currency)}</TableCell>
                     <TableCell>
                       <StatusBadge status={s.status === "COMPLETED" ? s.paymentStatus : s.status} />
                     </TableCell>
                     <TableCell className="text-right">
-                      {s.status === "COMPLETED" && parseFloat(s.balance) > 0 && (
+                      {canManageSales && s.status === "COMPLETED" && parseFloat(s.balance) > 0 && (
                         <Button size="sm" variant="outline" onClick={() => openPay(s)}>
                           <Wallet className="h-3.5 w-3.5" /> Record Payment
                         </Button>

@@ -9,7 +9,7 @@ import { generateInvoiceNumber, toNumber } from "@/lib/utils";
 export async function GET(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "sales:view");
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim();
@@ -56,13 +56,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "sales:manage");
     const body = await req.json();
     const data = createSaleSchema.parse(body);
-
-    if (data.paymentMethod === "CREDIT" && !data.customerId) {
-      return fail("A customer must be selected for credit sales", 422);
-    }
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const productIds = data.items.map((i) => i.productId);
@@ -89,7 +85,13 @@ export async function POST(req: NextRequest) {
           throw new ApiError(422, `Insufficient stock for ${product.name}. Only ${product.quantity} left.`);
         }
 
-        const unitPrice = toNumber(product.sellingPrice);
+        if (data.saleType === "WHOLESALE" && product.wholesalePrice === null) {
+          throw new ApiError(422, `Set a wholesale price for ${product.name} before making a wholesale sale`);
+        }
+
+        const unitPrice = toNumber(
+          data.saleType === "WHOLESALE" ? product.wholesalePrice! : product.sellingPrice
+        );
         const buyingPrice = toNumber(product.buyingPrice);
         const lineSubtotal = unitPrice * item.quantity;
         const lineCost = buyingPrice * item.quantity;
@@ -112,9 +114,12 @@ export async function POST(req: NextRequest) {
       const total = subtotal - discount;
       const grossProfit = total - totalCost;
 
-      let amountPaid = data.paymentMethod === "CREDIT" ? data.amountPaid ?? 0 : total;
+      let amountPaid = data.amountPaid ?? (data.paymentMethod === "CREDIT" ? 0 : total);
       amountPaid = Math.min(amountPaid, total);
       const balance = total - amountPaid;
+      if (balance > 0 && !data.customerId) {
+        throw new ApiError(422, "Select a customer to record a deposit or outstanding balance");
+      }
       const paymentStatus = balance <= 0 ? "PAID" : amountPaid > 0 ? "PARTIAL" : "UNPAID";
 
       let invoiceNumber = generateInvoiceNumber();
@@ -141,6 +146,7 @@ export async function POST(req: NextRequest) {
           amountPaid,
           balance,
           paymentMethod: data.paymentMethod,
+          saleType: data.saleType,
           paymentStatus,
           status: "COMPLETED",
           items: { createMany: { data: itemsData } },
@@ -188,14 +194,14 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      if (data.paymentMethod === "CREDIT" && balance > 0) {
+      if (balance > 0) {
         await tx.notification.create({
           data: {
             businessId: business.id,
             userId,
             type: "CUSTOMER_CREDIT",
-            title: "Customer credit recorded",
-            message: `A balance of ${balance.toLocaleString()} was recorded on invoice ${sale.invoiceNumber}.`,
+            title: "Customer balance recorded",
+            message: `${amountPaid > 0 ? `A deposit of ${amountPaid.toLocaleString()} was received. ` : ""}A balance of ${balance.toLocaleString()} remains on invoice ${sale.invoiceNumber}.`,
           },
         });
       }

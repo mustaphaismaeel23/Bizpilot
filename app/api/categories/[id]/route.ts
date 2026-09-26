@@ -7,7 +7,7 @@ import { requireUserId, requireBusiness, assertOwnership, ApiError } from "@/lib
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:manage");
 
     const existing = await prisma.category.findUnique({ where: { id: params.id } });
     if (!existing) throw new ApiError(404, "Category not found");
@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:manage");
 
     const existing = await prisma.category.findUnique({
       where: { id: params.id },

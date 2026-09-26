@@ -8,7 +8,7 @@ import { toNumber } from "@/lib/utils";
 export async function GET(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "reports:view");
     const { searchParams } = new URL(req.url);
     const range = (searchParams.get("range") as RangeKey) || "today";
     const { from, to } = resolveRange(range, searchParams.get("from"), searchParams.get("to"));
@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
         Invoice: s.invoiceNumber,
         Date: s.createdAt.toISOString(),
         Customer: s.customer?.name ?? "Walk-in",
+        SaleType: s.saleType,
         Subtotal: toNumber(s.subtotal),
         Discount: toNumber(s.discount),
         Total: toNumber(s.total),

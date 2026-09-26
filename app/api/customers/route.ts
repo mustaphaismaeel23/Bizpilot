@@ -9,7 +9,7 @@ import { toNumber } from "@/lib/utils";
 export async function GET(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "customers:view");
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim();
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "customers:manage");
     const body = await req.json();
     const data = customerSchema.parse(body);
 

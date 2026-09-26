@@ -9,7 +9,7 @@ import { toNumber } from "@/lib/utils";
 export async function POST(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "sales:manage");
     const body = await req.json();
     const data = debtPaymentSchema.parse(body);
 

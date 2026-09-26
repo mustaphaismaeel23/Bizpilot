@@ -14,7 +14,7 @@ async function getOwnedProduct(id: string, businessId: string) {
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:view");
     const product = await getOwnedProduct(params.id, business.id);
     const full = await prisma.product.findUnique({
       where: { id: product.id },
@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:manage");
     const existing = await getOwnedProduct(params.id, business.id);
 
     const body = await req.json();
@@ -51,6 +51,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         ...(data.description !== undefined && { description: data.description }),
         ...(data.buyingPrice !== undefined && { buyingPrice: data.buyingPrice }),
         ...(data.sellingPrice !== undefined && { sellingPrice: data.sellingPrice }),
+        ...(data.wholesalePrice !== undefined && { wholesalePrice: data.wholesalePrice }),
         ...(data.lowStockThreshold !== undefined && { lowStockThreshold: data.lowStockThreshold }),
         ...(data.image !== undefined && { image: data.image }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
@@ -71,7 +72,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:manage");
     await getOwnedProduct(params.id, business.id);
 
     const updated = await prisma.product.update({

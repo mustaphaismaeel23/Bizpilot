@@ -6,7 +6,7 @@ import { requireUserId, requireBusiness } from "@/lib/session";
 export async function GET() {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "notifications:view");
 
     const notifications = await prisma.notification.findMany({
       where: { businessId: business.id },
@@ -27,7 +27,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "notifications:manage");
     const body = await req.json().catch(() => ({}));
 
     if (body.id) {

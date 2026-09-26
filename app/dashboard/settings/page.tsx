@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { Activity, Power, UserPlus } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,11 +13,23 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useBusiness } from "@/components/shared/business-context";
 import { useFetch, apiRequest } from "@/hooks/use-fetch";
 import { useToast } from "@/components/ui/toaster";
 
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR"];
+const STAFF_ROLES = ["MANAGER", "CASHIER", "STAFF"] as const;
+
+interface StaffMember {
+  id: string;
+  role: (typeof STAFF_ROLES)[number];
+  isActive: boolean;
+  createdAt: string;
+  activityCount: number;
+  lastActivityAt: string | null;
+  user: { id: string; name: string; email: string; phone: string | null };
+}
 
 function BusinessProfileTab() {
   const business = useBusiness();
@@ -181,6 +195,129 @@ function SecurityTab() {
   );
 }
 
+function TeamTab() {
+  const { toast } = useToast();
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", role: "CASHIER" as (typeof STAFF_ROLES)[number] });
+  const { data: members, loading, refetch } = useFetch<StaffMember[]>("/api/team");
+
+  const createStaff = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      await apiRequest("/api/team", { method: "POST", body: form });
+      setForm({ name: "", email: "", phone: "", password: "", role: "CASHIER" });
+      refetch();
+      toast({ title: "Staff account created", description: "Share the initial password with the staff member securely.", variant: "success" });
+    } catch (error) {
+      toast({ title: "Could not create account", description: error instanceof Error ? error.message : undefined, variant: "destructive" });
+    }
+  };
+
+  const updateMember = async (member: StaffMember, changes: { role?: StaffMember["role"]; isActive?: boolean }) => {
+    try {
+      await apiRequest(`/api/team/${member.id}`, { method: "PATCH", body: changes });
+      refetch();
+      toast({ title: "Staff access updated", variant: "success" });
+    } catch (error) {
+      toast({ title: "Could not update staff", description: error instanceof Error ? error.message : undefined, variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5" /> Add staff account</CardTitle>
+          <CardDescription>Create a login for this business and choose what the staff member can access. Give them the initial password privately.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={createStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="staff-name">Full name</Label>
+              <Input id="staff-name" required minLength={2} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="staff-email">Email</Label>
+              <Input id="staff-email" type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="staff-phone">Phone (optional)</Label>
+              <Input id="staff-phone" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="staff-password">Initial password</Label>
+              <Input id="staff-password" type="password" minLength={8} required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={form.role} onValueChange={(role) => setForm({ ...form, role: role as typeof form.role })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STAFF_ROLES.map((role) => <SelectItem key={role} value={role}>{role.charAt(0) + role.slice(1).toLowerCase()}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button type="submit" className="w-full"><UserPlus className="h-4 w-4" /> Create account</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Team access</CardTitle>
+          <CardDescription>Review staff roles, recent recorded activity, and account access.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Loading team...</p>
+          ) : !members?.length ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No staff accounts yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Staff member</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Activity</TableHead>
+                  <TableHead className="text-right">Access</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {members.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <p className="font-medium">{member.user.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.user.email}</p>
+                    </TableCell>
+                    <TableCell>
+                      <Select value={member.role} onValueChange={(role) => updateMember(member, { role: role as StaffMember["role"] })}>
+                        <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                        <SelectContent>{STAFF_ROLES.map((role) => <SelectItem key={role} value={role}>{role.charAt(0) + role.slice(1).toLowerCase()}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell><Badge variant={member.isActive ? "secondary" : "destructive"}>{member.isActive ? "Active" : "Suspended"}</Badge></TableCell>
+                    <TableCell>
+                      <p className="flex items-center gap-1.5 text-sm"><Activity className="h-3.5 w-3.5" /> {member.activityCount} actions</p>
+                      <p className="text-xs text-muted-foreground">{member.lastActivityAt ? `Last ${formatDistanceToNow(new Date(member.lastActivityAt), { addSuffix: true })}` : "No activity recorded"}</p>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant={member.isActive ? "outline" : "default"} size="sm" onClick={() => updateMember(member, { isActive: !member.isActive })}>
+                        <Power className="h-4 w-4" /> {member.isActive ? "Suspend" : "Reactivate"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function NotificationsTab() {
   const [prefs, setPrefs] = useState({ lowStock: true, sales: true, credit: true });
   return (
@@ -220,7 +357,7 @@ function SubscriptionTab() {
   const plans = [
     { name: "Free", price: "₦0", period: "/month", features: ["1 business", "Up to 50 products", "Basic reports"] },
     { name: "Basic", price: "₦2,500", period: "/month", features: ["1 business", "Unlimited products", "All reports", "CSV export"] },
-    { name: "Pro", price: "₦5,000", period: "/month", features: ["Everything in Basic", "Staff accounts (soon)", "Priority support"], highlight: true },
+    { name: "Pro", price: "₦5,000", period: "/month", features: ["Everything in Basic", "Team accounts", "Priority support"], highlight: true },
     { name: "Business", price: "₦10,000", period: "/month", features: ["Everything in Pro", "Multiple branches (soon)", "WhatsApp receipts (soon)"] },
   ];
   return (
@@ -262,20 +399,22 @@ function SubscriptionTab() {
 }
 
 export default function SettingsPage() {
+  const business = useBusiness();
+  const isOwner = business.role === "OWNER";
   return (
     <div>
       <PageHeader title="Settings" description="Manage your business and account preferences." />
-      <Tabs defaultValue="business">
+      <Tabs defaultValue={isOwner ? "business" : "user"}>
         <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="business">Business Profile</TabsTrigger>
+          {isOwner && <TabsTrigger value="business">Business Profile</TabsTrigger>}
+          {isOwner && <TabsTrigger value="team">Team & Staff</TabsTrigger>}
           <TabsTrigger value="user">User Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="subscription">Subscription</TabsTrigger>
         </TabsList>
-        <TabsContent value="business">
-          <BusinessProfileTab />
-        </TabsContent>
+        {isOwner && <TabsContent value="business"><BusinessProfileTab /></TabsContent>}
+        {isOwner && <TabsContent value="team"><TeamTab /></TabsContent>}
         <TabsContent value="user">
           <UserProfileTab />
         </TabsContent>

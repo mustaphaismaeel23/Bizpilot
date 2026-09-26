@@ -29,6 +29,7 @@ interface SaleDetail {
   total: string;
   amountPaid: string;
   balance: string;
+  saleType: string;
   paymentMethod: string;
   paymentStatus: string;
   status: string;
@@ -118,6 +119,11 @@ export default function SaleReceiptPage() {
           </div>
 
           <div className="text-sm mb-4">
+            <p className="text-muted-foreground">Sale type</p>
+            <p className="font-medium">{data.saleType === "WHOLESALE" ? "Wholesale" : "Retail"}</p>
+          </div>
+
+          <div className="text-sm mb-4">
             <p className="text-muted-foreground">Customer</p>
             <p className="font-medium">{data.customer?.name ?? "Walk-in customer"}</p>
           </div>
@@ -157,12 +163,12 @@ export default function SaleReceiptPage() {
               <span>{formatMoney(data.total, business.currency)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Amount Paid</span>
+              <span>{data.paymentStatus === "PARTIAL" ? "Deposit received" : "Amount paid"}</span>
               <span>{formatMoney(data.amountPaid, business.currency)}</span>
             </div>
             {parseFloat(data.balance) > 0 && (
               <div className="flex justify-between text-destructive font-medium">
-                <span>Balance Due</span>
+                <span>Remaining balance due</span>
                 <span>{formatMoney(data.balance, business.currency)}</span>
               </div>
             )}

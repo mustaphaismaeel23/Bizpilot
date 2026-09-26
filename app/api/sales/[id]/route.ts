@@ -6,7 +6,7 @@ import { requireUserId, requireBusiness, assertOwnership, ApiError } from "@/lib
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "sales:view");
 
     const sale = await prisma.sale.findUnique({
       where: { id: params.id },

@@ -8,7 +8,7 @@ import { toNumber } from "@/lib/utils";
 export async function GET(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "reports:view");
     const { searchParams } = new URL(req.url);
     const format = searchParams.get("format");
 

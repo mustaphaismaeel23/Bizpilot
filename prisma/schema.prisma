@@ -31,6 +31,11 @@ enum PaymentStatus {
   UNPAID
 }
 
+enum SaleType {
+  RETAIL
+  WHOLESALE
+}
+
 enum SaleStatus {
   COMPLETED
   CANCELLED
@@ -119,6 +124,7 @@ model BusinessUser {
   userId     String
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   role       BusinessRole @default(OWNER)
+  isActive   Boolean      @default(true)
   createdAt  DateTime     @default(now())
 
   @@unique([businessId, userId])
@@ -151,6 +157,7 @@ model Product {
   description       String?
   buyingPrice       Decimal  @db.Decimal(14, 2)
   sellingPrice      Decimal  @db.Decimal(14, 2)
+  wholesalePrice    Decimal? @db.Decimal(14, 2)
   quantity          Int      @default(0)
   lowStockThreshold Int      @default(5)
   image             String?
@@ -201,6 +208,7 @@ model Sale {
   amountPaid    Decimal       @default(0) @db.Decimal(14, 2)
   balance       Decimal       @default(0) @db.Decimal(14, 2)
   paymentMethod PaymentMethod
+  saleType      SaleType      @default(RETAIL)
   paymentStatus PaymentStatus @default(PAID)
   status        SaleStatus    @default(COMPLETED)
   createdAt     DateTime      @default(now())

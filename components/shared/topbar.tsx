@@ -81,7 +81,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           <DropdownMenuContent align="end" className="w-80">
             <div className="flex items-center justify-between px-2 py-1.5">
               <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
-              {(data?.unreadCount ?? 0) > 0 && (
+              {(data?.unreadCount ?? 0) > 0 && business.role !== "STAFF" && (
                 <button onClick={markAllRead} className="text-xs text-primary hover:underline">
                   Mark all read
                 </button>
@@ -120,6 +120,9 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <DropdownMenuLabel>{session?.user?.name}</DropdownMenuLabel>
             <DropdownMenuItem disabled className="text-xs text-muted-foreground">
               {session?.user?.email}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+              Role: {business.role === "OWNER" ? "Admin" : business.role.charAt(0) + business.role.slice(1).toLowerCase()}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

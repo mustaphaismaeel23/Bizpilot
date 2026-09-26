@@ -53,7 +53,7 @@ function SalesReportTab() {
   const business = useBusiness();
   const [range, setRange] = useState("today");
   const { data, loading } = useFetch<{
-    sales: { id: string; invoiceNumber: string; total: string; grossProfit: string; paymentMethod: string; createdAt: string; customer: { name: string } | null }[];
+    sales: { id: string; invoiceNumber: string; total: string; grossProfit: string; saleType: string; paymentMethod: string; createdAt: string; customer: { name: string } | null }[];
     summary: { totalSales: number; totalRevenue: number; totalDiscount: number; totalGrossProfit: number };
   }>(`/api/reports/sales?range=${range}`, [range]);
 
@@ -83,6 +83,7 @@ function SalesReportTab() {
                     <TableRow>
                       <TableHead>Invoice</TableHead>
                       <TableHead>Customer</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Gross Profit</TableHead>
                       <TableHead>Payment</TableHead>
@@ -94,6 +95,7 @@ function SalesReportTab() {
                       <TableRow key={s.id}>
                         <TableCell>{s.invoiceNumber}</TableCell>
                         <TableCell>{s.customer?.name ?? "Walk-in"}</TableCell>
+                        <TableCell>{s.saleType === "WHOLESALE" ? "Wholesale" : "Retail"}</TableCell>
                         <TableCell>{formatMoney(s.total, business.currency)}</TableCell>
                         <TableCell>{formatMoney(s.grossProfit, business.currency)}</TableCell>
                         <TableCell>{s.paymentMethod}</TableCell>

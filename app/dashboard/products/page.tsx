@@ -48,6 +48,7 @@ interface Product {
   category: Category | null;
   buyingPrice: string;
   sellingPrice: string;
+  wholesalePrice: string | null;
   quantity: number;
   lowStockThreshold: number;
   isActive: boolean;
@@ -61,6 +62,7 @@ function statusFor(p: Product) {
 
 export default function ProductsPage() {
   const business = useBusiness();
+  const canManageProducts = business.role === "OWNER" || business.role === "MANAGER";
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const [search, setSearch] = useState("");
@@ -118,7 +120,7 @@ export default function ProductsPage() {
 
   const openCreate = () => {
     setEditing(null);
-    reset({ name: "", sku: "", categoryId: null, buyingPrice: 0, sellingPrice: 0, quantity: 0, lowStockThreshold: 5, description: "" });
+    reset({ name: "", sku: "", categoryId: null, buyingPrice: 0, sellingPrice: 0, wholesalePrice: null, quantity: 0, lowStockThreshold: 5, description: "" });
     setDialogOpen(true);
   };
 
@@ -130,6 +132,7 @@ export default function ProductsPage() {
       categoryId: p.categoryId,
       buyingPrice: parseFloat(p.buyingPrice),
       sellingPrice: parseFloat(p.sellingPrice),
+      wholesalePrice: p.wholesalePrice === null ? null : parseFloat(p.wholesalePrice),
       quantity: p.quantity,
       lowStockThreshold: p.lowStockThreshold,
       description: "",
@@ -171,14 +174,14 @@ export default function ProductsPage() {
         title="Products"
         description="Manage your product catalog, pricing and stock levels."
         actions={
-          <>
+          canManageProducts ? <>
             <Button variant="outline" onClick={() => setCategoryDialogOpen(true)}>
               <Tags className="h-4 w-4" /> Categories
             </Button>
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4" /> Add Product
             </Button>
-          </>
+          </> : undefined
         }
       />
 
@@ -220,8 +223,8 @@ export default function ProductsPage() {
               icon={Package}
               title="No products yet"
               description="Add your first product to start tracking inventory and sales."
-              actionLabel="Add Product"
-              onAction={openCreate}
+              actionLabel={canManageProducts ? "Add Product" : undefined}
+              onAction={canManageProducts ? openCreate : undefined}
             />
           ) : (
             <Table>
@@ -231,7 +234,8 @@ export default function ProductsPage() {
                   <TableHead>SKU</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Buying Price</TableHead>
-                  <TableHead>Selling Price</TableHead>
+                  <TableHead>Retail Price</TableHead>
+                  <TableHead>Wholesale Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -245,17 +249,20 @@ export default function ProductsPage() {
                     <TableCell>{p.category?.name ?? "—"}</TableCell>
                     <TableCell>{formatMoney(p.buyingPrice, business.currency)}</TableCell>
                     <TableCell>{formatMoney(p.sellingPrice, business.currency)}</TableCell>
+                    <TableCell>{p.wholesalePrice === null ? "Not set" : formatMoney(p.wholesalePrice, business.currency)}</TableCell>
                     <TableCell>{p.quantity}</TableCell>
                     <TableCell>
                       <StatusBadge status={statusFor(p)} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(p)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {canManageProducts && <>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(p)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -311,9 +318,14 @@ export default function ProductsPage() {
                 {errors.buyingPrice && <p className="text-sm text-destructive">{errors.buyingPrice.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Selling price ({business.currency})</Label>
+                <Label>Retail price ({business.currency})</Label>
                 <Input type="number" step="0.01" {...register("sellingPrice")} />
                 {errors.sellingPrice && <p className="text-sm text-destructive">{errors.sellingPrice.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Wholesale price ({business.currency}, optional)</Label>
+                <Input type="number" step="0.01" min={0} {...register("wholesalePrice")} />
+                {errors.wholesalePrice && <p className="text-sm text-destructive">{errors.wholesalePrice.message}</p>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

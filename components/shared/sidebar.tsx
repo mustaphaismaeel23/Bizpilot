@@ -15,20 +15,26 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
+import { useBusiness } from "@/components/shared/business-context";
+import { hasBusinessPermission, type BusinessPermission } from "@/lib/permissions";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/sales", label: "Sales", icon: ShoppingCart },
-  { href: "/dashboard/products", label: "Products", icon: Package },
-  { href: "/dashboard/inventory", label: "Inventory", icon: Boxes },
-  { href: "/dashboard/customers", label: "Customers", icon: Users },
-  { href: "/dashboard/expenses", label: "Expenses", icon: Receipt },
-  { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard:view" },
+  { href: "/dashboard/sales", label: "Sales", icon: ShoppingCart, permission: "sales:view" },
+  { href: "/dashboard/products", label: "Products", icon: Package, permission: "products:view" },
+  { href: "/dashboard/inventory", label: "Inventory", icon: Boxes, permission: "inventory:view" },
+  { href: "/dashboard/customers", label: "Customers", icon: Users, permission: "customers:view" },
+  { href: "/dashboard/expenses", label: "Expenses", icon: Receipt, permission: "expenses:view" },
+  { href: "/dashboard/reports", label: "Reports", icon: BarChart3, permission: "reports:view" },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const business = useBusiness();
+  const visibleNav = NAV.filter((item) =>
+    !item.permission || hasBusinessPermission(business.role, item.permission as BusinessPermission)
+  );
 
   const content = (
     <div className="flex h-full flex-col">
@@ -41,7 +47,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
         </button>
       </div>
       <nav className="flex-1 space-y-1 px-3">
-        {NAV.map((item) => {
+        {visibleNav.map((item) => {
           const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (

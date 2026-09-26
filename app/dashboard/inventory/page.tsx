@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useFetch, apiRequest } from "@/hooks/use-fetch";
 import { useToast } from "@/components/ui/toaster";
+import { useBusiness } from "@/components/shared/business-context";
 import { format } from "date-fns";
 
 interface Product {
@@ -43,6 +44,8 @@ function statusFor(p: Product) {
 }
 
 export default function InventoryPage() {
+  const business = useBusiness();
+  const canManageInventory = business.role === "OWNER" || business.role === "MANAGER";
   const { toast } = useToast();
   const { data: products, loading, refetch } = useFetch<{ items: Product[] }>("/api/products?pageSize=100");
   const { data: txns, loading: txnLoading, refetch: refetchTxns } = useFetch<Txn[]>("/api/inventory");
@@ -84,9 +87,9 @@ export default function InventoryPage() {
         title="Inventory"
         description="Track stock levels and movements across your products."
         actions={
-          <Button onClick={openDialog}>
+          canManageInventory ? <Button onClick={openDialog}>
             <PackagePlus className="h-4 w-4" /> Stock In / Adjust
-          </Button>
+          </Button> : undefined
         }
       />
 

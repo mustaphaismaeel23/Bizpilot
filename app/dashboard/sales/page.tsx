@@ -23,6 +23,7 @@ interface Sale {
   id: string;
   invoiceNumber: string;
   total: string;
+  saleType: string;
   paymentMethod: string;
   paymentStatus: string;
   status: string;
@@ -32,6 +33,7 @@ interface Sale {
 
 export default function SalesHistoryPage() {
   const business = useBusiness();
+  const canManageSales = business.role !== "STAFF";
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const [search, setSearch] = useState("");
@@ -73,11 +75,11 @@ export default function SalesHistoryPage() {
         title="Sales"
         description="View and manage all sales transactions."
         actions={
-          <Button asChild>
+          canManageSales ? <Button asChild>
             <Link href="/dashboard/sales/new">
               <Plus className="h-4 w-4" /> New Sale
             </Link>
-          </Button>
+          </Button> : undefined
         }
       />
 
@@ -132,8 +134,8 @@ export default function SalesHistoryPage() {
               icon={Receipt}
               title="No sales yet"
               description="Record your first sale to see it here."
-              actionLabel="New Sale"
-              onAction={() => (window.location.href = "/dashboard/sales/new")}
+              actionLabel={canManageSales ? "New Sale" : undefined}
+              onAction={canManageSales ? () => (window.location.href = "/dashboard/sales/new") : undefined}
             />
           ) : (
             <>
@@ -142,6 +144,7 @@ export default function SalesHistoryPage() {
                   <TableRow>
                     <TableHead>Invoice</TableHead>
                     <TableHead>Customer</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Payment Method</TableHead>
                     <TableHead>Status</TableHead>
@@ -154,6 +157,7 @@ export default function SalesHistoryPage() {
                     <TableRow key={s.id}>
                       <TableCell className="font-medium">{s.invoiceNumber}</TableCell>
                       <TableCell>{s.customer?.name ?? "Walk-in"}</TableCell>
+                      <TableCell>{s.saleType === "WHOLESALE" ? "Wholesale" : "Retail"}</TableCell>
                       <TableCell>{formatMoney(s.total, business.currency)}</TableCell>
                       <TableCell>{s.paymentMethod}</TableCell>
                       <TableCell>
@@ -171,7 +175,7 @@ export default function SalesHistoryPage() {
                             <Printer className="h-4 w-4" />
                           </Link>
                         </Button>
-                        {s.status === "COMPLETED" && (
+                        {canManageSales && s.status === "COMPLETED" && (
                           <Button variant="ghost" size="icon" onClick={() => handleCancel(s)}>
                             <Ban className="h-4 w-4 text-destructive" />
                           </Button>

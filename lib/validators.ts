@@ -44,6 +44,19 @@ export const businessOnboardingSchema = z.object({
 });
 export type BusinessOnboardingInput = z.infer<typeof businessOnboardingSchema>;
 
+export const createStaffSchema = z.object({
+  name: z.string().min(2, "Full name is required"),
+  email: z.string().email("Enter a valid email"),
+  phone: z.string().optional(),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(["MANAGER", "CASHIER", "STAFF"]),
+});
+
+export const updateStaffSchema = z.object({
+  role: z.enum(["MANAGER", "CASHIER", "STAFF"]).optional(),
+  isActive: z.boolean().optional(),
+}).refine((data) => data.role !== undefined || data.isActive !== undefined, "Provide a role or account status update");
+
 export const categorySchema = z.object({
   name: z.string().min(1, "Category name is required"),
 });
@@ -55,6 +68,10 @@ export const productSchema = z.object({
   description: z.string().optional(),
   buyingPrice: z.coerce.number().min(0, "Buying price must be 0 or more"),
   sellingPrice: z.coerce.number().min(0, "Selling price must be 0 or more"),
+  wholesalePrice: z.preprocess(
+    (value) => value === "" ? null : value,
+    z.union([z.null(), z.coerce.number().min(0, "Wholesale price must be 0 or more")]).optional()
+  ),
   quantity: z.coerce.number().int().min(0, "Quantity must be 0 or more"),
   lowStockThreshold: z.coerce.number().int().min(0).default(5),
   image: z.string().optional(),
@@ -77,6 +94,7 @@ export const saleItemSchema = z.object({
 
 export const createSaleSchema = z.object({
   customerId: z.string().optional().nullable(),
+  saleType: z.enum(["RETAIL", "WHOLESALE"]).default("RETAIL"),
   items: z.array(saleItemSchema).min(1, "Add at least one product"),
   discount: z.coerce.number().min(0).default(0),
   paymentMethod: z.enum(["CASH", "TRANSFER", "POS", "CREDIT"]),

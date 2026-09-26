@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { businessOnboardingSchema } from "@/lib/validators";
 import { ok, fail, handleApiError } from "@/lib/api";
-import { requireUserId, ApiError } from "@/lib/session";
+import { requireUserId, requireBusiness, ApiError } from "@/lib/session";
 
 // GET: return the caller's business, or null if onboarding is not complete.
 export async function GET() {
@@ -14,7 +14,9 @@ export async function GET() {
       include: { business: true },
       orderBy: { createdAt: "asc" },
     });
-    return ok(membership?.business ?? null);
+    if (!membership) return ok(null);
+    if (!membership.isActive) throw new ApiError(403, "Your access to this business has been suspended.");
+    return ok({ ...membership.business, role: membership.role });
   } catch (error) {
     return handleApiError(error);
   }
@@ -73,14 +75,13 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const membership = await prisma.businessUser.findFirst({ where: { userId } });
-    if (!membership) throw new ApiError(404, "No business found");
+    const { business } = await requireBusiness(userId, "business:manage");
 
     const body = await req.json();
     const data = businessOnboardingSchema.partial().parse(body);
 
     const updated = await prisma.business.update({
-      where: { id: membership.businessId },
+      where: { id: business.id },
       data,
     });
 

@@ -7,7 +7,7 @@ import { requireUserId, requireBusiness } from "@/lib/session";
 export async function GET() {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:view");
 
     const categories = await prisma.category.findMany({
       where: { businessId: business.id },
@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "products:manage");
     const body = await req.json();
     const data = categorySchema.parse(body);
 

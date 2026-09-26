@@ -36,6 +36,7 @@ interface Expense {
 
 export default function ExpensesPage() {
   const business = useBusiness();
+  const canManageExpenses = business.role === "OWNER" || business.role === "MANAGER";
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const [search, setSearch] = useState("");
@@ -101,9 +102,9 @@ export default function ExpensesPage() {
         title="Expenses"
         description="Track business expenses by category."
         actions={
-          <Button onClick={openCreate}>
+          canManageExpenses ? <Button onClick={openCreate}>
             <Plus className="h-4 w-4" /> Add Expense
-          </Button>
+          </Button> : undefined
         }
       />
 
@@ -142,7 +143,7 @@ export default function ExpensesPage() {
               ))}
             </div>
           ) : !data || data.length === 0 ? (
-            <EmptyState icon={Receipt} title="No expenses recorded" actionLabel="Add Expense" onAction={openCreate} />
+            <EmptyState icon={Receipt} title="No expenses recorded" actionLabel={canManageExpenses ? "Add Expense" : undefined} onAction={canManageExpenses ? openCreate : undefined} />
           ) : (
             <Table>
               <TableHeader>
@@ -166,12 +167,14 @@ export default function ExpensesPage() {
                     <TableCell>{formatMoney(e.amount, business.currency)}</TableCell>
                     <TableCell>{e.user.name}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(e)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(e)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {canManageExpenses && <>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(e)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(e)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>}
                     </TableCell>
                   </TableRow>
                 ))}

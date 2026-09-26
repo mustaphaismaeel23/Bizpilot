@@ -33,6 +33,7 @@ interface Customer {
 
 export default function CustomersPage() {
   const business = useBusiness();
+  const canManageCustomers = business.role !== "STAFF";
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const [search, setSearch] = useState("");
@@ -95,9 +96,9 @@ export default function CustomersPage() {
         title="Customers"
         description="Manage your customers and track their purchase history and credit."
         actions={
-          <Button onClick={openCreate}>
+          canManageCustomers ? <Button onClick={openCreate}>
             <Plus className="h-4 w-4" /> Add Customer
-          </Button>
+          </Button> : undefined
         }
       />
 
@@ -144,12 +145,14 @@ export default function CustomersPage() {
                           <Eye className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(c)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {canManageCustomers && <>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(c)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>}
                     </TableCell>
                   </TableRow>
                 ))}

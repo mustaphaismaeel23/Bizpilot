@@ -7,7 +7,7 @@ import { startOfDay, endOfDay, subDays, format } from "date-fns";
 export async function GET() {
   try {
     const userId = await requireUserId();
-    const { business } = await requireBusiness(userId);
+    const { business } = await requireBusiness(userId, "dashboard:view");
     const businessId = business.id;
 
     const todayStart = startOfDay(new Date());
