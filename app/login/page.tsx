@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -16,7 +16,7 @@ import { useToast } from "@/components/ui/toaster";
 
 type FormData = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -80,10 +80,20 @@ export default function LoginPage() {
           Log in
         </Button>
       </form>
-      <div className="mt-6 rounded-md border bg-secondary/40 p-3 text-xs text-muted-foreground">
-        Demo login — email: <span className="font-mono">demo@bizpilot.app</span> · password:{" "}
-        <span className="font-mono">Password123!</span>
-      </div>
     </AuthShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthShell title="Welcome back" description="Loading sign-in form...">
+          <p className="text-sm text-muted-foreground">Please wait...</p>
+        </AuthShell>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

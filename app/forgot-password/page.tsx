@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/hooks/use-fetch";
 import { CheckCircle2 } from "lucide-react";
+import { useToast } from "@/components/ui/toaster";
 
 type FormData = z.infer<typeof forgotPasswordSchema>;
 
@@ -19,6 +20,7 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [resetUrl, setResetUrl] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const { toast } = useToast();
 
   const {
     register,
@@ -35,6 +37,12 @@ export default function ForgotPasswordPage() {
       });
       setResetUrl(result.resetUrl ?? null);
       setDone(true);
+    } catch (error) {
+      toast({
+        title: "Password reset unavailable",
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -42,13 +50,13 @@ export default function ForgotPasswordPage() {
 
   if (done) {
     return (
-      <AuthShell title="Check your email" description="We've generated a password reset link.">
+      <AuthShell title="Password reset requested" description="If an account matches that email, reset instructions are available.">
         <div className="rounded-md border bg-accent/50 p-4 text-sm">
           <div className="flex items-center gap-2 text-accent-foreground font-medium mb-2">
             <CheckCircle2 className="h-4 w-4" /> Reset link ready
           </div>
           <p className="text-muted-foreground">
-            No email provider is configured for this demo, so here is your reset link directly:
+            In local development, a reset link appears here when the account exists. Email delivery must be configured for other environments.
           </p>
           {resetUrl && (
             <Link href={resetUrl} className="mt-3 block break-all text-primary underline">

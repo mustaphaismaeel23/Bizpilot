@@ -227,7 +227,7 @@ function SubscriptionTab() {
     <Card>
       <CardHeader>
         <CardTitle>Subscription</CardTitle>
-        <CardDescription>You're currently on the Free plan.</CardDescription>
+        <CardDescription>You&apos;re currently on the Free plan.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">

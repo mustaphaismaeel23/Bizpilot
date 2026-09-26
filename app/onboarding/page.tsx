@@ -89,7 +89,7 @@ export default function OnboardingPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Business name</Label>
-              <Input id="name" placeholder="e.g. Demo Electronics Store" {...register("name")} />
+              <Input id="name" placeholder="e.g. Northside Market" {...register("name")} />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
 

@@ -2,9 +2,13 @@ import { NextRequest } from "next/server";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { forgotPasswordSchema } from "@/lib/validators";
-import { ok, handleApiError } from "@/lib/api";
+import { fail, ok, handleApiError } from "@/lib/api";
 
 export async function POST(req: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return fail("Password reset email delivery is not configured.", 503);
+  }
+
   try {
     const body = await req.json();
     const { email } = forgotPasswordSchema.parse(body);
@@ -23,9 +27,6 @@ export async function POST(req: NextRequest) {
       data: { userId: user.id, token, expiresAt },
     });
 
-    // NOTE: no transactional email provider is configured for this MVP.
-    // The reset link is returned directly so the flow is fully functional
-    // in development/demo. Wire up an email provider before production use.
     const resetUrl = `/reset-password?token=${token}`;
 
     return ok({

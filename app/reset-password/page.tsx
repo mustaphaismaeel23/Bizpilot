@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +15,7 @@ import { apiRequest } from "@/hooks/use-fetch";
 
 type FormData = z.infer<typeof resetPasswordSchema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -78,5 +78,19 @@ export default function ResetPasswordPage() {
         </Button>
       </form>
     </AuthShell>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthShell title="Reset password" description="Loading password reset form...">
+          <p className="text-sm text-muted-foreground">Please wait...</p>
+        </AuthShell>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

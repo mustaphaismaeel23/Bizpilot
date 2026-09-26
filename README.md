@@ -19,110 +19,91 @@ business-level data isolation.
 - **Auth:** NextAuth (Credentials provider, bcrypt password hashing, JWT sessions)
 - **Icons:** Lucide React
 
-## Getting started
+## Local development
 
-### 1. Install dependencies
+### Prerequisites
 
-```bash
-npm install
-```
+- Node.js 20 LTS and npm
+- PostgreSQL 15 or newer, either installed locally or running in Docker
 
-### 2. Configure environment variables
+### Setup
 
-```bash
-cp .env.example .env
-```
+1. Install dependencies:
 
-Edit `.env`:
+  ```powershell
+  npm install
+  ```
 
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/bizpilot?schema=public"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="generate-a-long-random-string"   # e.g. `openssl rand -base64 32`
-```
+2. Copy the environment template and edit `.env`:
 
-You need a running PostgreSQL instance. Locally you can use Docker:
+  ```powershell
+  Copy-Item .env.example .env
+  ```
 
-```bash
-docker run --name bizpilot-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=bizpilot -p 5432:5432 -d postgres:16
-```
+  Set `DATABASE_URL` to your PostgreSQL database and replace
+  `NEXTAUTH_SECRET` with a unique random value. Generate one with:
 
-### 3. Generate the Prisma client & run migrations
+  ```powershell
+  node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+  ```
 
-```bash
-npx prisma generate
-npx prisma migrate dev --name init
-```
+  Keep `.env` local; never commit database credentials or secrets.
 
-> **Note:** `prisma generate` downloads a query-engine binary from
-> `binaries.prisma.sh` the first time it runs. This requires normal
-> outbound internet access (this is standard on any developer machine,
-> CI runner, or hosting platform — it was simply not reachable inside
-> the sandboxed environment this project was authored in, which only
-> allowed connections to `npm`/`pypi`/`github`-style registries). Once
-> generated, the code has already been reviewed for correctness against
-> the schema; if you hit any residual TypeScript errors after
-> generation they will be narrow and easy to resolve.
+3. If you need a local PostgreSQL container, start one with:
 
-### 4. Seed demo data (optional but recommended)
+  ```powershell
+  docker run --name bizpilot-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=bizpilot -p 5432:5432 -d postgres:16
+  ```
 
-```bash
+4. Generate Prisma Client and apply the checked-in migrations:
+
+  ```powershell
+  npx prisma generate
+  npx prisma migrate dev
+  ```
+
+5. Start the development server and create your own account at `/register`:
+
+  ```powershell
+  npm run dev
+  ```
+
+  Open `http://localhost:3000`. Registration and onboarding create your
+  own user and business; the project does not include shared login
+  credentials or pre-populated transaction data.
+
+### Optional local account bootstrap
+
+To create a local owner account without using the registration form, set
+`DEV_SEED_EMAIL` and `DEV_SEED_PASSWORD` in `.env` (password must be at
+least 12 characters), then run:
+
+```powershell
 npm run seed
 ```
 
-This creates a demo account you can log in with immediately:
+The seed runs only with `NODE_ENV=development` and creates an account
+and business without sample customers, products, sales, or expenses.
+Use a unique local password; do not reuse production credentials.
 
-```
-Email:    demo@bizpilot.app
-Password: Password123!
-```
+### Development commands
 
-It also creates a demo business ("Demo Electronics Store"), categories,
-5 products (one deliberately low-stock, one out-of-stock), 3 customers,
-4 sample sales (including one on credit), and a handful of expenses —
-so the dashboard, reports and low-stock alerts have real data to show
-immediately.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Next.js development server |
+| `npm run build` | Generate Prisma Client and build the app |
+| `npm start` | Start the production build locally |
+| `npm run lint` | Run Next.js ESLint checks |
+| `npm run prisma:migrate -- --name <change>` | Create and apply a development migration |
+| `npm run prisma:deploy` | Apply existing migrations in a deployment environment |
+| `npm run prisma:studio` | Open Prisma Studio |
+| `npm run seed` | Create a configured local development account and business |
 
-### 5. Run the app
+Password-reset links are returned only in development. Configure an email
+delivery provider before enabling password reset in other environments.
 
-```bash
-npm run dev
-```
-
-Visit `http://localhost:3000`.
-
-## Available scripts
-
-| Command                  | Description                                  |
-| ------------------------- | --------------------------------------------- |
-| `npm run dev`              | Start the dev server                          |
-| `npm run build`             | Prisma generate + production build            |
-| `npm start`                | Start the production server (after build)     |
-| `npm run prisma:migrate`    | Create/apply a dev migration                  |
-| `npm run prisma:deploy`     | Apply migrations in production                |
-| `npm run prisma:studio`     | Open Prisma Studio (visual DB browser)        |
-| `npm run seed`              | Populate demo data                            |
-
-## Production build & deployment
-
-```bash
-npm run build
-npm start
-```
-
-For a platform like Vercel, Railway, or Render:
-
-1. Provision a PostgreSQL database (Neon, Supabase, Railway, RDS, etc.).
-2. Set `DATABASE_URL`, `NEXTAUTH_URL` (your production URL) and
-   `NEXTAUTH_SECRET` as environment variables on the platform.
-3. Run `npx prisma migrate deploy` as part of your deploy step (or a
-   one-off release command) before the app starts.
-4. Deploy — the build script (`npm run build`) already runs
-   `prisma generate` first.
-
-Never expose `DATABASE_URL`, `NEXTAUTH_SECRET`, or any other secret in
-client-side code — everything sensitive here lives only in server
-components/API routes and environment variables.
+Never expose `DATABASE_URL`, `NEXTAUTH_SECRET`, or other secrets in
+client-side code. Server-side code reads them from environment variables.
 
 ## Architecture notes
 
@@ -172,16 +153,12 @@ bizpilot/
   hooks/              # useFetch/apiRequest client data-fetching helpers
   prisma/
     schema.prisma
-    seed.ts
+    seed.ts             # Optional, environment-configured local account bootstrap
   types/               # NextAuth type augmentation
 ```
 
-## MVP acceptance test
+## Development workflow
 
-The full workflow described in the spec (register → login → create
-business → create category/product → create customer → complete a
-sale → stock decreases → sale appears in history → revenue/profit
-update → record expense → net result updates → low-stock alert →
-view reports → print/download receipt → log out → business isolation
-holds) is implemented end-to-end. Run `npm run seed` for a
- pre-populated business, or walk through it fresh via `/register`.
+Create a feature branch, make schema changes with a named development
+migration, and validate changes with `npm run lint` and `npm run build`.
+Use separate local database credentials for development and deployment.
